@@ -140,43 +140,17 @@ BIT_OP(bit_band, &=)
   BRET(b)
 }
 
-static int bit_tohex(lua_State *L)
-{
-  UBits b = barg(L, 1);
-  SBits n = lua_isnone(L, 2) ? 8 : (SBits)barg(L, 2);
-  const char *hexdigits = "0123456789abcdef";
-  char buf[8];
-  int i;
-  if (n < 0)
-  {
-    n = -n;
-    hexdigits = "0123456789ABCDEF";
-  }
-  if (n > 8)
-    n = 8;
-  for (i = (int)n; --i >= 0;)
-  {
-    buf[i] = hexdigits[b & 15];
-    b >>= 4;
-  }
-  lua_pushlstring(L, buf, (size_t)n);
-  return 1;
-}
-
-// static __attribute__((section(".ulibtext"))) void
-// bit_tohex_aux(void *_unused, void *_buf, void *_hexdigits, void *_hexdigits_cap, void *_b, void *_np)
+// static int bit_tohex(lua_State *L)
 // {
-//   UBits b = (UBits)_b;
-//   SBits *np = (SBits *)_np;
-//   SBits n = *np;
-//   char *buf = (char *)_buf;
-//   const char *hexdigits = (char *)_hexdigits;
-//   const char *hexdigits_cap = (char *)_hexdigits_cap;
+//   UBits b = barg(L, 1);
+//   SBits n = lua_isnone(L, 2) ? 8 : (SBits)barg(L, 2);
+//   const char *hexdigits = "0123456789abcdef";
+//   char buf[8];
 //   int i;
 //   if (n < 0)
 //   {
 //     n = -n;
-//     hexdigits = hexdigits_cap;
+//     hexdigits = "0123456789ABCDEF";
 //   }
 //   if (n > 8)
 //     n = 8;
@@ -185,33 +159,59 @@ static int bit_tohex(lua_State *L)
 //     buf[i] = hexdigits[b & 15];
 //     b >>= 4;
 //   }
-//   *np = n;
-// }
-
-// LZY:
-// static int secure_bit_tohex(lua_State *L)
-// {
-//   UBits b = barg(L, 1);
-//   SBits n = lua_isnone(L, 2) ? 8 : (SBits)barg(L, 2);
-//   const char *hexdigits = "0123456789abcdef";
-//   const char *hexdigits_cap = "0123456789ABCDEF";
-//   char buf[8];
-
-//   int h1 = LIBCFG_ALLOC_RW(&n, sizeof(n));
-//   int h2 = LIBCFG_ALLOC_RW(hexdigits, strlen(hexdigits));
-//   int h3 = LIBCFG_ALLOC_RW(hexdigits_cap, strlen(hexdigits_cap));
-//   int h4 = LIBCFG_ALLOC_RW(buf, sizeof(buf));
-
-//   LIB_CALL(bit_tohex_aux, buf, hexdigits, hexdigits_cap, b, &n);
-
-//   LIBCFG_FREE(h4);
-//   LIBCFG_FREE(h3);
-//   LIBCFG_FREE(h2);
-//   LIBCFG_FREE(h1);
-
 //   lua_pushlstring(L, buf, (size_t)n);
 //   return 1;
 // }
+
+static __attribute__((section(".ulibtext"))) void
+bit_tohex_aux(void *_unused, void *_buf, void *_hexdigits, void *_hexdigits_cap, void *_b, void *_np)
+{
+  UBits b = (UBits)_b;
+  SBits *np = (SBits *)_np;
+  SBits n = *np;
+  char *buf = (char *)_buf;
+  const char *hexdigits = (char *)_hexdigits;
+  const char *hexdigits_cap = (char *)_hexdigits_cap;
+  int i;
+  if (n < 0)
+  {
+    n = -n;
+    hexdigits = hexdigits_cap;
+  }
+  if (n > 8)
+    n = 8;
+  for (i = (int)n; --i >= 0;)
+  {
+    buf[i] = hexdigits[b & 15];
+    b >>= 4;
+  }
+  *np = n;
+}
+
+// LZY:
+static int secure_bit_tohex(lua_State *L)
+{
+  UBits b = barg(L, 1);
+  SBits n = lua_isnone(L, 2) ? 8 : (SBits)barg(L, 2);
+  const char *hexdigits = "0123456789abcdef";
+  const char *hexdigits_cap = "0123456789ABCDEF";
+  char buf[8];
+
+  int h1 = LIBCFG_ALLOC_RW(&n, sizeof(n));
+  int h2 = LIBCFG_ALLOC_RW(hexdigits, strlen(hexdigits));
+  int h3 = LIBCFG_ALLOC_RW(hexdigits_cap, strlen(hexdigits_cap));
+  int h4 = LIBCFG_ALLOC_RW(buf, sizeof(buf));
+
+  LIB_CALL(bit_tohex_aux, buf, hexdigits, hexdigits_cap, b, &n);
+
+  LIBCFG_FREE(h4);
+  LIBCFG_FREE(h3);
+  LIBCFG_FREE(h2);
+  LIBCFG_FREE(h1);
+
+  lua_pushlstring(L, buf, (size_t)n);
+  return 1;
+}
 
 static const struct luaL_Reg bit_funcs[] = {
     {"tobit", bit_tobit},
@@ -225,8 +225,7 @@ static const struct luaL_Reg bit_funcs[] = {
     {"rol", bit_rol},
     {"ror", bit_ror},
     {"bswap", bit_bswap},
-    // {"tohex", secure_bit_tohex},
-    {"tohex", bit_tohex_aux},
+    {"tohex", secure_bit_tohex},
     {NULL, NULL}};
 
 /* Signed right-shifts are implementation-defined per C89/C99.
