@@ -34,6 +34,7 @@
 #include "intset.h"
 #include "zmalloc.h"
 #include "endianconv.h"
+#include "milkytime.h"
 
 /* Note that these encodings are ordered, so:
  * INTSET_ENC_INT16 < INTSET_ENC_INT32 < INTSET_ENC_INT64. */
@@ -305,7 +306,7 @@ static void ok(void) {
 
 static long long usec(void) {
     struct timeval tv;
-    gettimeofday(&tv,NULL);
+    milky_gettimeofday(&tv,NULL);
     return (((long long)tv.tv_sec)*1000000)+tv.tv_usec;
 }
 
@@ -353,7 +354,7 @@ int intsetTest(int argc, char **argv) {
     uint8_t success;
     int i;
     intset *is;
-    srand(time(NULL));
+    srand(milky_time(NULL));
 
     UNUSED(argc);
     UNUSED(argv);

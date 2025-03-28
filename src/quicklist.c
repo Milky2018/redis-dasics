@@ -34,6 +34,7 @@
 #include "ziplist.h"
 #include "util.h" /* for ll2string */
 #include "lzf.h"
+#include "milkytime.h"
 
 #if defined(REDIS_TEST) || defined(REDIS_TEST_VERBOSE)
 #include <stdio.h> /* for printf (debug printing), snprintf (genstr) */
@@ -1466,7 +1467,7 @@ static long long ustime(void) {
     struct timeval tv;
     long long ust;
 
-    gettimeofday(&tv, NULL);
+    milky_gettimeofday(&tv, NULL);
     ust = ((long long)tv.tv_sec) * 1000000;
     ust += tv.tv_usec;
     return ust;

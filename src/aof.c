@@ -30,6 +30,7 @@
 #include "server.h"
 #include "bio.h"
 #include "rio.h"
+#include "milkytime.h"
 
 #include <signal.h>
 #include <fcntl.h>
@@ -1380,7 +1381,7 @@ int rewriteAppendOnlyFileBackground(void) {
         serverLog(LL_NOTICE,
             "Background append only file rewriting started by pid %d",childpid);
         server.aof_rewrite_scheduled = 0;
-        server.aof_rewrite_time_start = time(NULL);
+        server.aof_rewrite_time_start = milky_time(NULL);
         server.aof_child_pid = childpid;
         updateDictResizePolicy();
         /* We set appendseldb to -1 in order to force the next call to the
@@ -1577,7 +1578,7 @@ cleanup:
     aofRewriteBufferReset();
     aofRemoveTempFile(server.aof_child_pid);
     server.aof_child_pid = -1;
-    server.aof_rewrite_time_last = time(NULL)-server.aof_rewrite_time_start;
+    server.aof_rewrite_time_last = milky_time(NULL)-server.aof_rewrite_time_start;
     server.aof_rewrite_time_start = -1;
     /* Schedule a new rewrite if we are waiting for it to switch the AOF ON. */
     if (server.aof_state == AOF_WAIT_REWRITE)

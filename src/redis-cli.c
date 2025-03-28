@@ -30,6 +30,7 @@
 
 #include "fmacros.h"
 #include "version.h"
+#include "milkytime.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -140,7 +141,7 @@ static long long ustime(void) {
     struct timeval tv;
     long long ust;
 
-    gettimeofday(&tv, NULL);
+    milky_gettimeofday(&tv, NULL);
     ust = ((long long)tv.tv_sec)*1000000;
     ust += tv.tv_usec;
     return ust;
@@ -1825,9 +1826,9 @@ static void pipeMode(void) {
     int eof = 0; /* True once we consumed all the standard input. */
     int done = 0;
     char magic[20]; /* Special reply we recognize. */
-    time_t last_read_time = time(NULL);
+    time_t last_read_time = milky_time(NULL);
 
-    srand(time(NULL));
+    srand(milky_time(NULL));
 
     /* Use non blocking I/O. */
     if (anetNonBlock(aneterr,fd) == ANET_ERR) {
@@ -1858,7 +1859,7 @@ static void pipeMode(void) {
                 }
                 if (nread > 0) {
                     redisReaderFeed(reader,ibuf,nread);
-                    last_read_time = time(NULL);
+                    last_read_time = milky_time(NULL);
                 }
             } while(nread > 0);
 
@@ -1954,7 +1955,7 @@ static void pipeMode(void) {
          * replies from the server for a few seconds, nor the final ECHO is
          * received. */
         if (eof && config.pipe_timeout > 0 &&
-            time(NULL)-last_read_time > config.pipe_timeout)
+            milky_time(NULL)-last_read_time > config.pipe_timeout)
         {
             fprintf(stderr,"No replies for %d seconds: exiting.\n",
                 config.pipe_timeout);
@@ -2469,7 +2470,7 @@ static void LRUTestMode(void) {
     long long start_cycle;
     int j;
 
-    srand(time(NULL)^getpid());
+    srand(milky_time(NULL)^getpid());
     while(1) {
         /* Perform cycles of 1 second with 50% writes and 50% reads.
          * We use pipelining batching writes / reads N times per cycle in order

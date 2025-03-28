@@ -1282,7 +1282,7 @@ static unsigned char *createIntList() {
 
 static long long usec(void) {
     struct timeval tv;
-    gettimeofday(&tv,NULL);
+    milky_gettimeofday(&tv,NULL);
     return (((long long)tv.tv_sec)*1000000)+tv.tv_usec;
 }
 

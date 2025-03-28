@@ -41,6 +41,7 @@
 
 #include "server.h"
 #include "slowlog.h"
+#include "milkytime.h"
 
 /* Create a new slowlog entry.
  * Incrementing the ref count of all the objects retained is up to
@@ -78,7 +79,7 @@ slowlogEntry *slowlogCreateEntry(client *c, robj **argv, int argc, long long dur
             }
         }
     }
-    se->time = time(NULL);
+    se->time = milky_time(NULL);
     se->duration = duration;
     se->id = server.slowlog_entry_id++;
     se->peerid = sdsnew(getClientPeerId(c));

@@ -9,7 +9,8 @@
 #include <locale.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
+// #include <time.h>
+#include "milkytime.h"
 
 #define loslib_c
 #define LUA_LIB
@@ -123,7 +124,7 @@ static int getfield (lua_State *L, const char *key, int d) {
 
 static int os_date (lua_State *L) {
   const char *s = luaL_optstring(L, 1, "%c");
-  time_t t = luaL_opt(L, (time_t)luaL_checknumber, 2, time(NULL));
+  time_t t = luaL_opt(L, (time_t)luaL_checknumber, 2, milky_time(NULL));
   struct tm *stm;
   if (*s == '!') {  /* UTC? */
     stm = gmtime(&t);
@@ -170,7 +171,7 @@ static int os_date (lua_State *L) {
 static int os_time (lua_State *L) {
   time_t t;
   if (lua_isnoneornil(L, 1))  /* called without args? */
-    t = time(NULL);  /* get current time */
+    t = milky_time(NULL);  /* get current time */
   else {
     struct tm ts;
     luaL_checktype(L, 1, LUA_TTABLE);

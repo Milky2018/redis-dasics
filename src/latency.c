@@ -34,6 +34,7 @@
  */
 
 #include "server.h"
+#include "milkytime.h"
 
 /* Dictionary type for latency events. */
 int dictStringKeyCompare(void *privdata, const void *key1, const void *key2) {
@@ -97,7 +98,7 @@ void latencyMonitorInit(void) {
  * server.latency_monitor_threshold. */
 void latencyAddSample(char *event, mstime_t latency) {
     struct latencyTimeSeries *ts = dictFetchValue(server.latency_events,event);
-    time_t now = time(NULL);
+    time_t now = milky_time(NULL);
     int prev;
 
     /* Create the time series if it does not exist. */
@@ -118,7 +119,7 @@ void latencyAddSample(char *event, mstime_t latency) {
         return;
     }
 
-    ts->samples[ts->idx].time = time(NULL);
+    ts->samples[ts->idx].time = milky_time(NULL);
     ts->samples[ts->idx].latency = latency;
     if (latency > ts->max) ts->max = latency;
 
@@ -195,7 +196,7 @@ void analyzeLatencyForEvent(char *event, struct latencyStats *ls) {
      * the second a range of seconds. */
     if (ls->samples) {
         ls->avg = sum / ls->samples;
-        ls->period = time(NULL) - ls->period;
+        ls->period = milky_time(NULL) - ls->period;
         if (ls->period == 0) ls->period = 1;
     }
 
@@ -534,7 +535,7 @@ sds latencyCommandGenSparkeline(char *event, struct latencyTimeSeries *ts) {
         }
         /* Use as label the number of seconds / minutes / hours / days
          * ago the event happened. */
-        elapsed = time(NULL) - ts->samples[i].time;
+        elapsed = milky_time(NULL) - ts->samples[i].time;
         if (elapsed < 60)
             snprintf(buf,sizeof(buf),"%ds",elapsed);
         else if (elapsed < 3600)

@@ -60,6 +60,7 @@
 
 #include "server.h"
 #include "bio.h"
+#include "milkytime.h"
 
 static pthread_t bio_threads[BIO_NUM_OPS];
 static pthread_mutex_t bio_mutex[BIO_NUM_OPS];
@@ -131,7 +132,7 @@ void bioInit(void) {
 void bioCreateBackgroundJob(int type, void *arg1, void *arg2, void *arg3) {
     struct bio_job *job = zmalloc(sizeof(*job));
 
-    job->time = time(NULL);
+    job->time = milky_time(NULL);
     job->arg1 = arg1;
     job->arg2 = arg2;
     job->arg3 = arg3;

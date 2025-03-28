@@ -55,6 +55,8 @@
 #include <sys/utsname.h>
 #include <locale.h>
 #include <sys/socket.h>
+#include <udasics.h>
+#include <milkytime.h>
 
 /* Our shared "common" objects */
 
@@ -333,7 +335,7 @@ void serverLogRaw(int level, const char *msg) {
         int role_char;
         pid_t pid = getpid();
 
-        gettimeofday(&tv,NULL);
+        milky_gettimeofday(&tv,NULL);
         off = strftime(buf,sizeof(buf),"%d %b %H:%M:%S.",localtime(&tv.tv_sec));
         snprintf(buf+off,sizeof(buf)-off,"%03d",(int)tv.tv_usec/1000);
         if (server.sentinel_mode) {
@@ -387,7 +389,7 @@ void serverLogFromHandler(int level, const char *msg) {
     ll2string(buf,sizeof(buf),getpid());
     if (write(fd,buf,strlen(buf)) == -1) goto err;
     if (write(fd,":signal-handler (",17) == -1) goto err;
-    ll2string(buf,sizeof(buf),time(NULL));
+    ll2string(buf,sizeof(buf),milky_time(NULL));
     if (write(fd,buf,strlen(buf)) == -1) goto err;
     if (write(fd,") ",2) == -1) goto err;
     if (write(fd,msg,strlen(msg)) == -1) goto err;
@@ -401,7 +403,7 @@ long long ustime(void) {
     struct timeval tv;
     long long ust;
 
-    gettimeofday(&tv, NULL);
+    milky_gettimeofday(&tv, NULL);
     ust = ((long long)tv.tv_sec)*1000000;
     ust += tv.tv_usec;
     return ust;
@@ -773,7 +775,7 @@ long long getInstantaneousMetric(int metric) {
 
 /* Check for timeouts. Returns non-zero if the client was terminated.
  * The function gets the current time in milliseconds as argument since
- * it gets called multiple times in a loop, so calling gettimeofday() for
+ * it gets called multiple times in a loop, so calling milky_gettimeofday() for
  * each iteration would be costly without any actual gain. */
 int clientsCronHandleTimeout(client *c, mstime_t now_ms) {
     time_t now = now_ms/1000;
@@ -923,9 +925,9 @@ void databasesCron(void) {
 /* We take a cached value of the unix time in the global state because with
  * virtual memory and aging there is to store the current time in objects at
  * every object access, and accuracy is not needed. To access a global var is
- * a lot faster than calling time(NULL) */
+ * a lot faster than calling milky_time(NULL) */
 void updateCachedTime(void) {
-    time_t unixtime = time(NULL);
+    time_t unixtime = milky_time(NULL);
     atomicSet(server.unixtime,unixtime);
     server.mstime = mstime();
 }
@@ -1382,7 +1384,7 @@ void initServerConfig(void) {
     server.aof_rewrite_min_size = AOF_REWRITE_MIN_SIZE;
     server.aof_rewrite_base_size = 0;
     server.aof_rewrite_scheduled = 0;
-    server.aof_last_fsync = time(NULL);
+    server.aof_last_fsync = milky_time(NULL);
     server.aof_rewrite_time_last = -1;
     server.aof_rewrite_time_start = -1;
     server.aof_lastbgrewrite_status = C_OK;
@@ -1477,7 +1479,7 @@ void initServerConfig(void) {
     server.repl_backlog_idx = 0;
     server.repl_backlog_off = 0;
     server.repl_backlog_time_limit = CONFIG_DEFAULT_REPL_BACKLOG_TIME_LIMIT;
-    server.repl_no_slaves_since = time(NULL);
+    server.repl_no_slaves_since = milky_time(NULL);
 
     /* Client output buffer limits */
     for (j = 0; j < CLIENT_TYPE_OBUF_COUNT; j++)
@@ -1868,14 +1870,14 @@ void initServer(void) {
     server.child_info_data.magic = 0;
     aofRewriteBufferReset();
     server.aof_buf = sdsempty();
-    server.lastsave = time(NULL); /* At startup we consider the DB saved. */
+    server.lastsave = milky_time(NULL); /* At startup we consider the DB saved. */
     server.lastbgsave_try = 0;    /* At startup we never tried to BGSAVE. */
     server.rdb_save_time_last = -1;
     server.rdb_save_time_start = -1;
     server.dirty = 0;
     resetServerStats();
     /* A few stats we don't want to reset: server startup time, and peak mem. */
-    server.stat_starttime = time(NULL);
+    server.stat_starttime = milky_time(NULL);
     server.stat_peak_memory = 0;
     server.stat_rdb_cow_bytes = 0;
     server.stat_aof_cow_bytes = 0;
@@ -2559,6 +2561,8 @@ int prepareForShutdown(int flags) {
         unlink(server.pidfile);
     }
 
+    unregister_udasics();
+
     /* Best effort flush of slave output buffers, so that we hopefully
      * send them pending writes. */
     flushSlavesOutputBuffers();
@@ -2658,9 +2662,9 @@ void echoCommand(client *c) {
 void timeCommand(client *c) {
     struct timeval tv;
 
-    /* gettimeofday() can only fail if &tv is a bad address so we
+    /* milky_gettimeofday() can only fail if &tv is a bad address so we
      * don't check for errors. */
-    gettimeofday(&tv,NULL);
+    milky_gettimeofday(&tv,NULL);
     addReplyMultiBulkLen(c,2);
     addReplyBulkLongLong(c,tv.tv_sec);
     addReplyBulkLongLong(c,tv.tv_usec);
@@ -2995,14 +2999,14 @@ sds genRedisInfoString(char *section) {
             (server.lastbgsave_status == C_OK) ? "ok" : "err",
             (intmax_t)server.rdb_save_time_last,
             (intmax_t)((server.rdb_child_pid == -1) ?
-                -1 : time(NULL)-server.rdb_save_time_start),
+                -1 : milky_time(NULL)-server.rdb_save_time_start),
             server.stat_rdb_cow_bytes,
             server.aof_state != AOF_OFF,
             server.aof_child_pid != -1,
             server.aof_rewrite_scheduled,
             (intmax_t)server.aof_rewrite_time_last,
             (intmax_t)((server.aof_child_pid == -1) ?
-                -1 : time(NULL)-server.aof_rewrite_time_start),
+                -1 : milky_time(NULL)-server.aof_rewrite_time_start),
             (server.aof_lastbgrewrite_status == C_OK) ? "ok" : "err",
             (server.aof_last_write_status == C_OK) ? "ok" : "err",
             server.stat_aof_cow_bytes);
@@ -3034,7 +3038,7 @@ sds genRedisInfoString(char *section) {
             perc = ((double)server.loading_loaded_bytes /
                    (server.loading_total_bytes+1)) * 100;
 
-            elapsed = time(NULL)-server.loading_start_time;
+            elapsed = milky_time(NULL)-server.loading_start_time;
             if (elapsed == 0) {
                 eta = 1; /* A fake 1 second figure if we don't have
                             enough info */
@@ -3211,7 +3215,7 @@ sds genRedisInfoString(char *section) {
                 }
                 if (state == NULL) continue;
                 if (slave->replstate == SLAVE_STATE_ONLINE)
-                    lag = time(NULL) - slave->repl_ack_time;
+                    lag = milky_time(NULL) - slave->repl_ack_time;
 
                 info = sdscatprintf(info,
                     "slave%d:ip=%s,port=%d,state=%s,"
@@ -3685,10 +3689,12 @@ int main(int argc, char **argv) {
 #ifdef INIT_SETPROCTITLE_REPLACEMENT
     spt_init(argc, argv);
 #endif
+    csr_write(0x880, 0);
+    register_udasics(0);
     setlocale(LC_COLLATE,"");
     zmalloc_set_oom_handler(redisOutOfMemoryHandler);
-    srand(time(NULL)^getpid());
-    gettimeofday(&tv,NULL);
+    srand(milky_time(NULL)^getpid());
+    milky_gettimeofday(&tv,NULL);
     char hashseed[16];
     getRandomHexChars(hashseed,sizeof(hashseed));
     dictSetHashFunctionSeed((uint8_t*)hashseed);

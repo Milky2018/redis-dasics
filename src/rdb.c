@@ -31,6 +31,7 @@
 #include "lzf.h"    /* LZF compression library */
 #include "zipmap.h"
 #include "endianconv.h"
+#include "milkytime.h"
 
 #include <math.h>
 #include <sys/types.h>
@@ -853,7 +854,7 @@ int rdbSaveInfoAuxFields(rio *rdb, int flags, rdbSaveInfo *rsi) {
     /* Add a few fields about the state when the RDB was created. */
     if (rdbSaveAuxFieldStrStr(rdb,"redis-ver",REDIS_VERSION) == -1) return -1;
     if (rdbSaveAuxFieldStrInt(rdb,"redis-bits",redis_bits) == -1) return -1;
-    if (rdbSaveAuxFieldStrInt(rdb,"ctime",time(NULL)) == -1) return -1;
+    if (rdbSaveAuxFieldStrInt(rdb,"ctime",milky_time(NULL)) == -1) return -1;
     if (rdbSaveAuxFieldStrInt(rdb,"used-mem",zmalloc_used_memory()) == -1) return -1;
 
     /* Handle saving options that generate aux fields. */
@@ -1035,7 +1036,7 @@ int rdbSave(char *filename, rdbSaveInfo *rsi) {
 
     serverLog(LL_NOTICE,"DB saved on disk");
     server.dirty = 0;
-    server.lastsave = time(NULL);
+    server.lastsave = milky_time(NULL);
     server.lastbgsave_status = C_OK;
     return C_OK;
 
@@ -1053,7 +1054,7 @@ int rdbSaveBackground(char *filename, rdbSaveInfo *rsi) {
     if (server.aof_child_pid != -1 || server.rdb_child_pid != -1) return C_ERR;
 
     server.dirty_before_bgsave = server.dirty;
-    server.lastbgsave_try = time(NULL);
+    server.lastbgsave_try = milky_time(NULL);
     openChildInfoPipe();
 
     start = ustime();
@@ -1090,7 +1091,7 @@ int rdbSaveBackground(char *filename, rdbSaveInfo *rsi) {
             return C_ERR;
         }
         serverLog(LL_NOTICE,"Background saving started by pid %d",childpid);
-        server.rdb_save_time_start = time(NULL);
+        server.rdb_save_time_start = milky_time(NULL);
         server.rdb_child_pid = childpid;
         server.rdb_child_type = RDB_CHILD_TYPE_DISK;
         updateDictResizePolicy();
@@ -1448,7 +1449,7 @@ void startLoading(FILE *fp) {
 
     /* Load the DB */
     server.loading = 1;
-    server.loading_start_time = time(NULL);
+    server.loading_start_time = milky_time(NULL);
     server.loading_loaded_bytes = 0;
     if (fstat(fileno(fp), &sb) == -1) {
         server.loading_total_bytes = 0;
@@ -1673,7 +1674,7 @@ void backgroundSaveDoneHandlerDisk(int exitcode, int bysignal) {
         serverLog(LL_NOTICE,
             "Background saving terminated with success");
         server.dirty = server.dirty - server.dirty_before_bgsave;
-        server.lastsave = time(NULL);
+        server.lastsave = milky_time(NULL);
         server.lastbgsave_status = C_OK;
     } else if (!bysignal && exitcode != 0) {
         serverLog(LL_WARNING, "Background saving error");
@@ -1694,7 +1695,7 @@ void backgroundSaveDoneHandlerDisk(int exitcode, int bysignal) {
     }
     server.rdb_child_pid = -1;
     server.rdb_child_type = RDB_CHILD_TYPE_NONE;
-    server.rdb_save_time_last = time(NULL)-server.rdb_save_time_start;
+    server.rdb_save_time_last = milky_time(NULL)-server.rdb_save_time_start;
     server.rdb_save_time_start = -1;
     /* Possibly there are slaves waiting for a BGSAVE in order to be served
      * (the first stage of SYNC is a bulk transfer of dump.rdb) */
@@ -1960,7 +1961,7 @@ int rdbSaveToSlavesSockets(rdbSaveInfo *rsi) {
 
             serverLog(LL_NOTICE,"Background RDB transfer started by pid %d",
                 childpid);
-            server.rdb_save_time_start = time(NULL);
+            server.rdb_save_time_start = milky_time(NULL);
             server.rdb_child_pid = childpid;
             server.rdb_child_type = RDB_CHILD_TYPE_SOCKET;
             updateDictResizePolicy();

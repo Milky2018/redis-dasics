@@ -43,6 +43,7 @@
 #include <limits.h>
 #include <sys/time.h>
 
+#include "milkytime.h"
 #include "dict.h"
 #include "zmalloc.h"
 #ifndef DICT_BENCHMARK_MAIN
@@ -233,7 +234,7 @@ int dictRehash(dict *d, int n) {
 long long timeInMilliseconds(void) {
     struct timeval tv;
 
-    gettimeofday(&tv,NULL);
+    milky_gettimeofday(&tv,NULL);
     return (((long long)tv.tv_sec)*1000)+(tv.tv_usec/1000);
 }
 

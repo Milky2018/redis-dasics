@@ -43,6 +43,7 @@
 #include "ae.h"
 #include "zmalloc.h"
 #include "config.h"
+#include "milkytime.h"
 
 /* Include the best multiplexing layer supported by this system.
  * The following should be ordered by performances, descending. */
@@ -69,7 +70,7 @@ aeEventLoop *aeCreateEventLoop(int setsize) {
     eventLoop->fired = zmalloc(sizeof(aeFiredEvent)*setsize);
     if (eventLoop->events == NULL || eventLoop->fired == NULL) goto err;
     eventLoop->setsize = setsize;
-    eventLoop->lastTime = time(NULL);
+    eventLoop->lastTime = milky_time(NULL);
     eventLoop->timeEventHead = NULL;
     eventLoop->timeEventNextId = 0;
     eventLoop->stop = 0;
@@ -182,7 +183,7 @@ static void aeGetTime(long *seconds, long *milliseconds)
 {
     struct timeval tv;
 
-    gettimeofday(&tv, NULL);
+    milky_gettimeofday(&tv, NULL);
     *seconds = tv.tv_sec;
     *milliseconds = tv.tv_usec/1000;
 }
@@ -264,7 +265,7 @@ static int processTimeEvents(aeEventLoop *eventLoop) {
     int processed = 0;
     aeTimeEvent *te, *prev;
     long long maxId;
-    time_t now = time(NULL);
+    time_t now = milky_time(NULL);
 
     /* If the system clock is moved to the future, and then set back to the
      * right value, time events may be delayed in a random way. Often this

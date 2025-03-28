@@ -42,6 +42,7 @@
 
 #include "util.h"
 #include "sha1.h"
+#include "milkytime.h"
 
 /* Glob-style pattern matching. */
 int stringmatchlen(const char *pattern, int patternLen,
@@ -588,7 +589,7 @@ void getRandomHexChars(char *p, unsigned int len) {
         pid_t pid = getpid();
 
         /* Use time and PID to fill the initial array. */
-        gettimeofday(&tv,NULL);
+        milky_gettimeofday(&tv,NULL);
         if (l >= sizeof(tv.tv_usec)) {
             memcpy(x,&tv.tv_usec,sizeof(tv.tv_usec));
             l -= sizeof(tv.tv_usec);

@@ -45,6 +45,7 @@
 #include "hiredis.h"
 #include "adlist.h"
 #include "zmalloc.h"
+#include "milkytime.h"
 
 #define UNUSED(V) ((void) V)
 #define RANDPTR_INITIAL_SIZE 8
@@ -106,7 +107,7 @@ static long long ustime(void) {
     struct timeval tv;
     long long ust;
 
-    gettimeofday(&tv, NULL);
+    milky_gettimeofday(&tv, NULL);
     ust = ((long)tv.tv_sec)*1000000;
     ust += tv.tv_usec;
     return ust;
@@ -116,7 +117,7 @@ static long long mstime(void) {
     struct timeval tv;
     long long mst;
 
-    gettimeofday(&tv, NULL);
+    milky_gettimeofday(&tv, NULL);
     mst = ((long long)tv.tv_sec)*1000;
     mst += tv.tv_usec/1000;
     return mst;
@@ -215,7 +216,7 @@ static void readHandler(aeEventLoop *el, int fd, void *privdata, int mask) {
 
                 if (config.showerrors) {
                     static time_t lasterr_time = 0;
-                    time_t now = time(NULL);
+                    time_t now = milky_time(NULL);
                     redisReply *r = reply;
                     if (r->type == REDIS_REPLY_ERROR && lasterr_time != now) {
                         lasterr_time = now;
@@ -652,7 +653,7 @@ int main(int argc, const char **argv) {
 
     client c;
 
-    srandom(time(NULL));
+    srandom(milky_time(NULL));
     signal(SIGHUP, SIG_IGN);
     signal(SIGPIPE, SIG_IGN);
 

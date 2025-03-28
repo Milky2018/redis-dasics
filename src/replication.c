@@ -30,6 +30,7 @@
 
 
 #include "server.h"
+#include "milkytime.h"
 
 #include <sys/time.h>
 #include <unistd.h>
@@ -308,7 +309,7 @@ void replicationFeedMonitors(client *c, list *monitors, int dictid, robj **argv,
     robj *cmdobj;
     struct timeval tv;
 
-    gettimeofday(&tv,NULL);
+    milky_gettimeofday(&tv,NULL);
     cmdrepr = sdscatprintf(cmdrepr,"%ld.%06ld ",(long)tv.tv_sec,(long)tv.tv_usec);
     if (c->flags & CLIENT_LUA) {
         cmdrepr = sdscatprintf(cmdrepr,"[%d lua] ",dictid);
@@ -1055,8 +1056,8 @@ int slaveIsInHandshakeState(void) {
  * RDB file from the master. */
 void replicationSendNewlineToMaster(void) {
     static time_t newline_sent;
-    if (time(NULL) != newline_sent) {
-        newline_sent = time(NULL);
+    if (milky_time(NULL) != newline_sent) {
+        newline_sent = milky_time(NULL);
         if (write(server.repl_transfer_s,"\n",1) == -1) {
             /* Pinging back in this stage is best-effort. */
         }
@@ -2489,7 +2490,7 @@ void replicationCron(void) {
     if (server.masterhost &&
         (server.repl_state == REPL_STATE_CONNECTING ||
          slaveIsInHandshakeState()) &&
-         (time(NULL)-server.repl_transfer_lastio) > server.repl_timeout)
+         (milky_time(NULL)-server.repl_transfer_lastio) > server.repl_timeout)
     {
         serverLog(LL_WARNING,"Timeout connecting to the MASTER...");
         cancelReplicationHandshake();
@@ -2497,7 +2498,7 @@ void replicationCron(void) {
 
     /* Bulk transfer I/O timeout? */
     if (server.masterhost && server.repl_state == REPL_STATE_TRANSFER &&
-        (time(NULL)-server.repl_transfer_lastio) > server.repl_timeout)
+        (milky_time(NULL)-server.repl_transfer_lastio) > server.repl_timeout)
     {
         serverLog(LL_WARNING,"Timeout receiving bulk data from MASTER... If the problem persists try to set the 'repl-timeout' parameter in redis.conf to a larger value.");
         cancelReplicationHandshake();
@@ -2505,7 +2506,7 @@ void replicationCron(void) {
 
     /* Timed out master when we are an already connected slave? */
     if (server.masterhost && server.repl_state == REPL_STATE_CONNECTED &&
-        (time(NULL)-server.master->lastinteraction) > server.repl_timeout)
+        (milky_time(NULL)-server.master->lastinteraction) > server.repl_timeout)
     {
         serverLog(LL_WARNING,"MASTER timeout: no data nor PING received...");
         freeClient(server.master);

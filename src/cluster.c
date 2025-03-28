@@ -31,6 +31,7 @@
 #include "server.h"
 #include "cluster.h"
 #include "endianconv.h"
+#include "milkytime.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -1126,7 +1127,7 @@ void clusterBlacklistAddNode(clusterNode *node) {
         id = sdsdup(id);
     }
     de = dictFind(server.cluster->nodes_black_list,id);
-    dictSetUnsignedIntegerVal(de,time(NULL)+CLUSTER_BLACKLIST_TTL);
+    dictSetUnsignedIntegerVal(de,milky_time(NULL)+CLUSTER_BLACKLIST_TTL);
     sdsfree(id);
 }
 
@@ -2750,7 +2751,7 @@ void clusterLogCantFailover(int reason) {
 
     /* Don't log if we have the same reason for some time. */
     if (reason == server.cluster->cant_failover_reason &&
-        time(NULL)-lastlog_time < CLUSTER_CANT_FAILOVER_RELOG_PERIOD)
+        milky_time(NULL)-lastlog_time < CLUSTER_CANT_FAILOVER_RELOG_PERIOD)
         return;
 
     server.cluster->cant_failover_reason = reason;
@@ -2781,7 +2782,7 @@ void clusterLogCantFailover(int reason) {
         msg = "Unknown reason code.";
         break;
     }
-    lastlog_time = time(NULL);
+    lastlog_time = milky_time(NULL);
     serverLog(LL_WARNING,"Currently unable to failover: %s", msg);
 }
 
