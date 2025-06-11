@@ -17,11 +17,15 @@ export STRIP=riscv64-linux-gnu-strip
 
 ## 编译
 
-进入 `deps` 目录使用 `make a -j $(nproc)` 分别编译出各个依赖库。如果没有成功编译 jemalloc，可以在后续编译 Redis 的时候使用 `MALLOC=libc` 参数。
+进入 `deps` 目录，使用 `make` 命令编译出各个依赖库。具体而言：
+
+- `hiredis` 需要使用 `make -j $(nproc)` 编译，编译完成后会生成 `deps/hiredis/libhiredis.a` 静态链接库。
+- `lua` 需要在 `src` 子目录使用 `make a -j $(nproc)` 编译，编译完成后会生成 `deps/lua/liblua.a` 静态链接库。
+- `linenoise` 需要使用 `make -j $(nproc)` 编译，编译完成后会生成 `deps/linenoise/linenoise.o`。
 
 进入 `dasics/LibDASICS` 目录，使用 `make` 编译得到静态链接库。
 
-进入 `src` 目录，使用 `make -j $(nproc)` 编译 Redis 源码，得到 redis-server, redis-cli 两个重要的二进制程序。
+进入 `src` 目录，使用 `make -j $(nproc)` 编译 Redis 源码，链接得到 redis-server, redis-cli 两个重要的二进制程序。
 
 ## 其它改动
 
