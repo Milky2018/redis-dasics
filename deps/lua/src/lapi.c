@@ -499,6 +499,40 @@ LUA_API void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n) {
   lua_unlock(L);
 }
 
+// void _lua_pushcclosure (void *unused, const void *_L, const void *_fn, const void *_n) {
+//   lua_State *L = (lua_State *)_L;
+//   lua_CFunction fn = (lua_CFunction)_fn;
+//   int n = (int)_n;
+
+//   Closure *cl;
+//   lua_lock(L);
+//   luaC_checkGC(L);
+//   api_checknelems(L, n);
+//   cl = luaF_newCclosure(L, n, getcurrenv(L));
+//   cl->c.f = fn;
+//   L->top -= n;
+//   while (n--)
+//     setobj2n(L, &cl->c.upvalue[n], L->top+n);
+//   setclvalue(L, L->top, cl);
+//   lua_assert(iswhite(obj2gco(cl)));
+//   api_incr_top(L);
+//   lua_unlock(L);
+// }
+
+
+// void _lib_call(void* func_name, ...) {
+//   asm("addi sp, sp, -8");
+//   asm("sd ra, 0(sp)");
+//   asm(".word 0x0005108b");
+//   asm("ld ra, 0(sp)");
+//   asm("addi sp, sp, 8");
+//   asm("ret");
+// }
+
+// LUA_API void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n) {
+//   lib_call(_lua_pushcclosure, L, fn, n);
+// }
+
 
 LUA_API void lua_pushboolean (lua_State *L, int b) {
   lua_lock(L);

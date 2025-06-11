@@ -28,6 +28,7 @@
  */
 
 #include "server.h"
+#include "safe.h"
 #include "cluster.h"
 #include "slowlog.h"
 #include "bio.h"
@@ -3691,6 +3692,7 @@ int main(int argc, char **argv) {
 #endif
     csr_write(0x880, 0);
     register_udasics(0);
+    resgister_ustore_fault_handler(handle_malicious_store);
     setlocale(LC_COLLATE,"");
     zmalloc_set_oom_handler(redisOutOfMemoryHandler);
     srand(milky_time(NULL)^getpid());

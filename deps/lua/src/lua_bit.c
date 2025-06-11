@@ -43,6 +43,9 @@ typedef unsigned __int64 uint64_t;
 #include <string.h>
 #endif
 
+#include <setjmp.h>
+extern jmp_buf safe_handle_point;
+
 typedef int32_t SBits;
 typedef uint32_t UBits;
 
@@ -163,16 +166,11 @@ BIT_OP(bit_band, &=)
 //   return 1;
 // }
 
-static __attribute__((section(".ulibtext"))) void
-bit_tohex_aux(void *_unused, void *_buf, void *_hexdigits, void *_hexdigits_cap, void *_b, void *_np)
+static __attribute__((section(".ulibtext"))) 
+void bit_tohex_aux(void *_unused, char *buf, char *hexdigits, char *hexdigits_cap, UBits b, SBits *np)
 {
-  UBits b = (UBits)_b;
-  SBits *np = (SBits *)_np;
-  SBits n = *np;
-  char *buf = (char *)_buf;
-  const char *hexdigits = (char *)_hexdigits;
-  const char *hexdigits_cap = (char *)_hexdigits_cap;
   int i;
+  SBits n = *np;
   if (n < 0)
   {
     n = -n;
@@ -202,15 +200,22 @@ static int secure_bit_tohex(lua_State *L)
   int h3 = LIBCFG_ALLOC_RW(hexdigits_cap, strlen(hexdigits_cap));
   int h4 = LIBCFG_ALLOC_RW(buf, sizeof(buf));
 
-  LIB_CALL(bit_tohex_aux, buf, hexdigits, hexdigits_cap, b, &n);
+  int val = setjmp(safe_handle_point);
+  if (val == 0) {
+    LIB_CALL(bit_tohex_aux, buf, hexdigits, hexdigits_cap, b, &n);
+  }
 
   LIBCFG_FREE(h4);
   LIBCFG_FREE(h3);
   LIBCFG_FREE(h2);
   LIBCFG_FREE(h1);
-
-  lua_pushlstring(L, buf, (size_t)n);
-  return 1;
+  
+  if (val == 0) {
+    lua_pushlstring(L, buf, (size_t)n);
+    return 1;
+  } else {
+    return luaL_error(L, "LUA script execution failed because of a security violation");
+  }
 }
 
 static const struct luaL_Reg bit_funcs[] = {

@@ -37,6 +37,8 @@
 #include <lualib.h>
 #include <ctype.h>
 #include <math.h>
+#include <uattr.h>
+#include <udasics.h>
 
 char *redisProtocolToLuaType_Int(lua_State *lua, char *reply);
 char *redisProtocolToLuaType_Bulk(lua_State *lua, char *reply);
@@ -75,6 +77,13 @@ struct ldbState {
     size_t maxlen;  /* Max var dump / reply length. */
     int maxlen_hint_sent; /* Did we already hint about "set maxlen"? */
 } ldb;
+
+/* LZY: this function is to claim .ulib_text section for DASICS setting up. */
+void ATTR_ULIB_TEXT __attribute__((unused))
+just_call_back()
+{
+    return;
+}
 
 /* ---------------------------------------------------------------------------
  * Utility functions.
@@ -828,10 +837,12 @@ void luaLoadLibraries(lua_State *lua) {
     luaLoadLib(lua, "cmsgpack", luaopen_cmsgpack);
     luaLoadLib(lua, "bit", luaopen_bit);
 
-/* LZY: I left some shit here! */
-#if 1 /* Stuff that we don't load currently, for sandboxing concerns. */
+#if 0 /* Stuff that we don't load currently, for sandboxing concerns. */
     luaLoadLib(lua, LUA_LOADLIBNAME, luaopen_package);
     luaLoadLib(lua, LUA_OSLIBNAME, luaopen_os);
+
+#else /* LZY: I left some shit here to mock CVE-2022-0543. */
+    luaLoadLib(lua, LUA_LOADLIBNAME, luaopen_package);
 #endif
 }
 
@@ -1203,6 +1214,18 @@ void luaMaskCountHook(lua_State *lua, lua_Debug *ar) {
     }
 }
 
+// void ATTR_UFREEZONE_TEXT lua_pcall_aux(void *unused, void *L, void *nargs, void *nresults, void *errfunc, void *errno_) {
+//     *(int *)errno_ = lua_pcall((lua_State *)L, (int)nargs, (int)nresults, (int)errfunc);
+// }
+
+// int lua_secure_pcall(lua_State *L, int nargs, int nresults, int errfunc) {
+//     int errno_ = 0;
+//     lib_call(lua_pcall_aux, (uint64_t)L, (uint64_t)nargs, (uint64_t)nresults, (uint64_t)errfunc, (uint64_t)&errno_);
+//     return errno_;
+// }
+
+
+
 void evalGenericCommand(client *c, int evalsha) {
     lua_State *lua = server.lua;
     char funcname[43];
@@ -1317,6 +1340,7 @@ void evalGenericCommand(client *c, int evalsha) {
      * already defined, we can call it. We have zero arguments and expect
      * a single return value. */
     err = lua_pcall(lua,0,1,-2);
+    // err = lua_secure_pcall(lua, 0, 1, -2);
 
     /* Perform some cleanup that we need to do both on error and success. */
     if (delhook) lua_sethook(lua,NULL,0,0); /* Disable hook */
