@@ -61,12 +61,43 @@ eval "return bit.tohex(65535, -2147483648)" 0
 原本应该导致服务器崩溃，现在会返回如下错误，并且服务器照常运行：
 
 ```
-(error) DASICS EXCEPTION: [DASICS EXCEPTION] Store Fault: <xxxxxx> pc: <xxxxxx>
+(error) ERR Error running script (call to f_cccc680a850df5ca0353505fdcd29abbdd0d98a9): @user_script:1: user_script:1: LUA script execution failed because of a security violation
 ```
 
 ## 防护说明
 
-TODO
+在 safe.c 文件中，添加了一个适用于 Redis 的统一例外处理函数 `handle_malicious_store`，它会在打印一些出错信息后，跳转到 `safe_handle_point`. 
+
+在 lua_bit.c 文件中，添加了对 `bit.tohex` 函数的调用进行保护，关键步骤如下：
+
+```c
+static int secure_bit_tohex(lua_State *L)
+{
+  UBits b = barg(L, 1);
+  SBits n = lua_isnone(L, 2) ? 8 : (SBits)barg(L, 2);
+  char buf[8];
+
+  int h1 = LIBCFG_ALLOC_RW(&n, sizeof(n));
+  int h2 = LIBCFG_ALLOC_RW(buf, sizeof(buf));
+
+  int val = setjmp(safe_handle_point);
+  if (val == 0) {
+    LIB_CALL(bit_tohex_aux, buf, b, &n);
+  }
+
+  LIBCFG_FREE(h2);
+  LIBCFG_FREE(h1);
+  
+  if (val == 0) {
+    lua_pushlstring(L, buf, (size_t)n);
+    return 1;
+  } else {
+    return luaL_error(L, "LUA script execution failed because of a security violation");
+  }
+}
+```
+
+当有错误发生时，会中止 LUA 脚本的执行，并向请求返回一个错误响应；否则，正常处理请求。
 
 # CVE-2022-0543
 

@@ -167,8 +167,10 @@ BIT_OP(bit_band, &=)
 // }
 
 static __attribute__((section(".ulibtext"))) 
-void bit_tohex_aux(void *_unused, char *buf, char *hexdigits, char *hexdigits_cap, UBits b, SBits *np)
+void bit_tohex_aux(void *_unused, char *buf, UBits b, SBits *np)
 {
+  const char *hexdigits = "0123456789abcdef";
+  const char *hexdigits_cap = "0123456789ABCDEF";
   int i;
   SBits n = *np;
   if (n < 0)
@@ -191,22 +193,16 @@ static int secure_bit_tohex(lua_State *L)
 {
   UBits b = barg(L, 1);
   SBits n = lua_isnone(L, 2) ? 8 : (SBits)barg(L, 2);
-  const char *hexdigits = "0123456789abcdef";
-  const char *hexdigits_cap = "0123456789ABCDEF";
   char buf[8];
 
   int h1 = LIBCFG_ALLOC_RW(&n, sizeof(n));
-  int h2 = LIBCFG_ALLOC_RW(hexdigits, strlen(hexdigits));
-  int h3 = LIBCFG_ALLOC_RW(hexdigits_cap, strlen(hexdigits_cap));
-  int h4 = LIBCFG_ALLOC_RW(buf, sizeof(buf));
+  int h2 = LIBCFG_ALLOC_RW(buf, sizeof(buf));
 
   int val = setjmp(safe_handle_point);
   if (val == 0) {
-    LIB_CALL(bit_tohex_aux, buf, hexdigits, hexdigits_cap, b, &n);
+    LIB_CALL(bit_tohex_aux, buf, b, &n);
   }
 
-  LIBCFG_FREE(h4);
-  LIBCFG_FREE(h3);
   LIBCFG_FREE(h2);
   LIBCFG_FREE(h1);
   

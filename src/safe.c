@@ -2,6 +2,9 @@
 #include <utrap.h>
 #include <setjmp.h>
 
+extern char __RODATA_BEGIN__[];
+extern char __RODATA_END__[];
+
 // int handle_DasicsULoadFault(struct ucontext_trap * regs)
 // {
 //     int idx = 0;
@@ -67,4 +70,10 @@ int handle_malicious_store(struct ucontext_trap *regs)
     longjmp(safe_handle_point, 1);
 
     return 0;
+}
+
+void safe_init() {
+    register_udasics(0);
+    resgister_ustore_fault_handler(handle_malicious_store);
+    dasics_libcfg_alloc(DASICS_LIBCFG_V | DASICS_LIBCFG_W | DASICS_LIBCFG_R, (uint64_t)__RODATA_BEGIN__, (uint64_t)__RODATA_END__);
 }

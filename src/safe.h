@@ -3,7 +3,7 @@
 
 #include <udasics.h>
 
-void set_uret_point(reg_t point);
 int handle_malicious_store(struct ucontext_trap *regs);
+void safe_init();
 
 #endif /* SAFE_H */

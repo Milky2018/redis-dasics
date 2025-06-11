@@ -3691,8 +3691,7 @@ int main(int argc, char **argv) {
     spt_init(argc, argv);
 #endif
     csr_write(0x880, 0);
-    register_udasics(0);
-    resgister_ustore_fault_handler(handle_malicious_store);
+    safe_init();
     setlocale(LC_COLLATE,"");
     zmalloc_set_oom_handler(redisOutOfMemoryHandler);
     srand(milky_time(NULL)^getpid());
