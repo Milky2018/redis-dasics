@@ -194,9 +194,12 @@ ifneq ($(strip $(PREV_FINAL_LDFLAGS)), $(strip $(FINAL_LDFLAGS)))
 .make-prerequisites: persist-settings
 endif
 
+LUA_A = ../deps/lua/src/liblua.a
+LUA_SO = ../../../lua5.1/lua-5.1.5/src/liblua.so
+
 # redis-server
-$(REDIS_SERVER_NAME): $(REDIS_SERVER_OBJ) ../deps/lua/src/liblua.a ../dasics/LibDASICS/build/libDASICS.a
-	$(REDIS_LD) -o $@ $^ ../deps/hiredis/libhiredis.a ../deps/lua/src/liblua.a ../dasics/LibDASICS/build/libDASICS.a $(FINAL_LIBS) -T../dasics/LibDASICS/ld.lds -fno-stack-protector -static -DDASICS_LINUX -DDASICS_COPY -DDASICS_DEBUG
+$(REDIS_SERVER_NAME): $(REDIS_SERVER_OBJ) $(LUA_A) ../dasics/LibDASICS/build/libDASICS.a
+	$(REDIS_LD) -o $@ $^ ../deps/hiredis/libhiredis.a $(LUA_A) ../dasics/LibDASICS/build/libDASICS.a $(FINAL_LIBS) -ldl -T../dasics/LibDASICS/ld.lds -fno-stack-protector -static -DDASICS_LINUX -DDASICS_COPY -DDASICS_DEBUG
 
 dump: $(REDIS_SERVER_NAME)
 	riscv64-linux-gnu-objdump -d $(REDIS_SERVER_NAME) > $(REDIS_SERVER_NAME).txt

@@ -45,7 +45,6 @@
 #endif
 
 
-
 /*
 @@ LUA_USE_POSIX includes all functionallity listed as X/Open System
 @* Interfaces Extension (XSI).
@@ -757,7 +756,8 @@ union luai_Cast { double l_d; long l_l; };
 ** without modifying the main part of the file.
 */
 
-
+#define LUA_USE_DLOPEN
+#define LUA_DL_DLOPEN
 
 #endif
 

@@ -31,6 +31,7 @@
 #include "sha1.h"
 #include "rand.h"
 #include "cluster.h"
+#include "safe.h"
 
 #include <lua.h>
 #include <lauxlib.h>
@@ -39,6 +40,7 @@
 #include <math.h>
 #include <uattr.h>
 #include <udasics.h>
+#include <setjmp.h>
 
 char *redisProtocolToLuaType_Int(lua_State *lua, char *reply);
 char *redisProtocolToLuaType_Bulk(lua_State *lua, char *reply);
@@ -77,13 +79,6 @@ struct ldbState {
     size_t maxlen;  /* Max var dump / reply length. */
     int maxlen_hint_sent; /* Did we already hint about "set maxlen"? */
 } ldb;
-
-/* LZY: this function is to claim .ulib_text section for DASICS setting up. */
-void ATTR_ULIB_TEXT __attribute__((unused))
-just_call_back()
-{
-    return;
-}
 
 /* ---------------------------------------------------------------------------
  * Utility functions.
@@ -1214,18 +1209,6 @@ void luaMaskCountHook(lua_State *lua, lua_Debug *ar) {
     }
 }
 
-// void ATTR_UFREEZONE_TEXT lua_pcall_aux(void *unused, void *L, void *nargs, void *nresults, void *errfunc, void *errno_) {
-//     *(int *)errno_ = lua_pcall((lua_State *)L, (int)nargs, (int)nresults, (int)errfunc);
-// }
-
-// int lua_secure_pcall(lua_State *L, int nargs, int nresults, int errfunc) {
-//     int errno_ = 0;
-//     lib_call(lua_pcall_aux, (uint64_t)L, (uint64_t)nargs, (uint64_t)nresults, (uint64_t)errfunc, (uint64_t)&errno_);
-//     return errno_;
-// }
-
-
-
 void evalGenericCommand(client *c, int evalsha) {
     lua_State *lua = server.lua;
     char funcname[43];
@@ -1339,6 +1322,7 @@ void evalGenericCommand(client *c, int evalsha) {
     /* At this point whether this script was never seen before or if it was
      * already defined, we can call it. We have zero arguments and expect
      * a single return value. */
+    // LZY
     err = lua_pcall(lua,0,1,-2);
     // err = lua_secure_pcall(lua, 0, 1, -2);
 
@@ -1422,8 +1406,13 @@ void evalGenericCommand(client *c, int evalsha) {
 }
 
 void evalCommand(client *c) {
-    if (!(c->flags & CLIENT_LUA_DEBUG))
-        evalGenericCommand(c,0);
+    if (!(c->flags & CLIENT_LUA_DEBUG)) {
+        safe_handle_point_initialized = 2;
+        if (setjmp(safe_handle_point) == 0)
+            evalGenericCommand(c,0);
+        else
+            addReplyError(c,"Internal error: Lua script execution failed. ");
+    }       
     else
         evalGenericCommandWithDebugging(c,0);
 }

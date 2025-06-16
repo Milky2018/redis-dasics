@@ -1,3 +1,6 @@
+#ifndef MILKYTIME_H
+#define MILKYTIME_H
+
 #include <time.h>
 #include <sys/syscall.h>
 #include <sys/time.h>
@@ -49,3 +52,5 @@ extern void lib_call(void *func_name, ...);
         body;                                         \
         LIBCFG_FREE(handler);                         \
     }
+
+#endif 

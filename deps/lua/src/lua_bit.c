@@ -44,7 +44,9 @@ typedef unsigned __int64 uint64_t;
 #endif
 
 #include <setjmp.h>
+
 extern jmp_buf safe_handle_point;
+extern int safe_handle_point_initialized;
 
 typedef int32_t SBits;
 typedef uint32_t UBits;
@@ -198,6 +200,7 @@ static int secure_bit_tohex(lua_State *L)
   int h1 = LIBCFG_ALLOC_RW(&n, sizeof(n));
   int h2 = LIBCFG_ALLOC_RW(buf, sizeof(buf));
 
+  safe_handle_point_initialized = 1;
   int val = setjmp(safe_handle_point);
   if (val == 0) {
     LIB_CALL(bit_tohex_aux, buf, b, &n);
